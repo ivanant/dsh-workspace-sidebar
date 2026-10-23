@@ -1,5 +1,7 @@
 # dsh-workspace-sidebar
 
+中文 | [English](README.en.md)
+
 让 DSH Web GUI 的**右侧栏**按工作区共享：同一个工作区里的所有对话使用同一份右侧栏标签与布局；切换到同工作区的另一个对话时，右侧栏内容不再跟着换。
 
 ## 功能
