@@ -7,6 +7,7 @@ Makes the **right sidebar** of the DSH Web GUI shared per workspace: every conve
 ## Features
 
 - Adds a **Share the sidebar per workspace** switch under **Settings → General**. It is **on** by default, and a status line below it shows the current state (for example, “Active: the sidebar follows this workspace's pinned conversation”).
+- After collapsing the sidebar, the conversation header's corner shows an **Expand sidebar** control with its shortcut hint, matching the official behaviour.
 - Workspace mode: each workspace **pins** one owning conversation (on first use, the newest non-blank conversation at that moment; it then stops following list changes), and every conversation in the workspace shares that sidebar: open tabs, active tab, split panes, floating panels, expanded state, and so on.
 - **New Session** neither empties the shared sidebar nor changes its owner, and that stays true after the blank conversation sends its first message.
 - Conversation mode: turn the switch off to restore DSH's built-in per-conversation behaviour.

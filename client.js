@@ -18,9 +18,9 @@ window.__ModuleLoader__.load({
     const zh = {
       "setting.title": "按工作区共享侧边栏",
       "setting.description":
-        "同一工作区里的对话共用一个会话的右侧栏标签与布局。",
-      "chrome.expand": "展开右侧栏",
-      "chrome.expandAria": "展开右侧栏",
+        "同一工作区里的对话共用一个会话的侧边栏标签与布局。",
+      "chrome.expand": "展开侧边栏",
+      "chrome.expandAria": "展开侧边栏",
     };
     const en = {
       "setting.title": "Share the sidebar per workspace",
@@ -139,9 +139,20 @@ window.__ModuleLoader__.load({
 
     function expandStyle() {
       return [
-        ".dws-expand{width:28px;color:var(--dsw-alias-label-secondary);flex:none;padding:0}",
+        // Style the control completely rather than relying on whichever button
+        // implementation is available: the primitive Button and the fallback
+        // native button otherwise render different borders and backgrounds.
+        ".dws-expand{box-sizing:border-box;appearance:none;-webkit-appearance:none;width:28px;height:28px;flex:none;padding:0;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}",
         ".dws-expand svg{width:15px;height:15px}",
         ".dws-expand-icon{transform:scaleX(-1)}",
+        ".dws-expand:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}",
+        ".dws-expand:active:not(:disabled){background:var(--dsw-alias-interactive-bg-active)}",
+        ".dws-expand:disabled{opacity:.4;cursor:not-allowed}",
+        // Match the app's focus convention: keyboard focus gets the branded
+        // ring; pointer focus stays quiet because the shell makes the ring
+        // color transparent then.
+        ".dws-expand:focus{outline:none}",
+        ".dws-expand:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}",
       ].join("\n");
     }
 
@@ -177,7 +188,7 @@ window.__ModuleLoader__.load({
         !String(rawDescription).startsWith("setting.")
           ? rawDescription
           : chinese
-            ? "同一工作区里的对话共用一个会话的右侧栏标签与布局。"
+            ? "同一工作区里的对话共用一个会话的侧边栏标签与布局。"
             : "Conversations in the same workspace share one conversation’s right-sidebar tabs and layout.";
       const statusText = !enabled
         ? chinese
@@ -185,7 +196,7 @@ window.__ModuleLoader__.load({
           : "Off: each conversation keeps its own sidebar"
         : status !== undefined && status.state === "active"
           ? chinese
-            ? "已生效：右侧栏跟随该工作区固定的承载会话"
+            ? "已生效：侧边栏跟随该工作区固定的承载会话"
             : "Active: the sidebar follows this workspace’s pinned conversation"
           : status !== undefined && status.state === "none"
             ? chinese
@@ -200,7 +211,7 @@ window.__ModuleLoader__.load({
                 : "Starting…";
 
       const control =
-        primitives !== undefined && typeof primitives.Switch === "function"
+        primitives?.Switch != null
           ? h(primitives.Switch, {
               checked: enabled,
               label: title,
@@ -280,26 +291,26 @@ window.__ModuleLoader__.load({
       // showing a control that could disagree with the column.
       if (shown !== false) return null;
 
-      const label = localized(t, "chrome.expand", "展开右侧栏", "Expand right sidebar");
+      const label = localized(t, "chrome.expand", "展开侧边栏", "Expand sidebar");
       const aria = localized(
         t,
         "chrome.expandAria",
-        "展开右侧栏",
-        "Expand the right sidebar",
+        "展开侧边栏",
+        "Expand the sidebar",
       );
       const icon =
-        primitives !== undefined &&
-        typeof primitives.IconPanelLeftOutlineRegular === "function"
+        primitives?.IconPanelLeftOutlineRegular != null
           ? h(primitives.IconPanelLeftOutlineRegular, {
               className: "dws-expand-icon",
             })
           : h("span", { "aria-hidden": true }, "\u2039");
       const button =
-        primitives !== undefined && typeof primitives.Button === "function"
+        primitives?.Button != null
           ? h(
               primitives.Button,
               {
                 size: "sm",
+                variant: "ghost",
                 className: "dws-expand",
                 "aria-label": aria,
                 "aria-keyshortcuts": shortcut?.aria,
@@ -329,7 +340,7 @@ window.__ModuleLoader__.load({
               icon,
             );
       const control =
-        primitives !== undefined && typeof primitives.Tooltip === "function"
+        primitives?.Tooltip != null
           ? h(
               primitives.Tooltip,
               {
@@ -439,8 +450,14 @@ window.__ModuleLoader__.load({
 
       function installHeader() {
         if (headerInstalled) return;
-        headerInstalled = true;
         try {
+          // The shortcuts service is optional (it only supplies the tooltip's key
+          // hint). Read it through ctx.get: the guarded dynamic facade only allows
+          // direct service access for services named in this plugin's `inject`,
+          // and touching ctx.shortcuts undeclared threw before the control could
+          // be registered, leaving a collapsed sidebar with no way back in.
+          const shortcuts =
+            typeof ctx.get === "function" ? ctx.get("shortcuts") : undefined;
           const injected = {
             toggleShared: () => {
               try {
@@ -459,10 +476,10 @@ window.__ModuleLoader__.load({
               }
             },
           };
-          if (ctx.shortcuts !== undefined) {
+          if (shortcuts !== undefined && shortcuts.catalog !== undefined) {
             injected.hooks = {
               shown: rightbarShownSource,
-              shortcuts: ctx.shortcuts.catalog,
+              shortcuts: shortcuts.catalog,
             };
           } else {
             injected.hooks = { shown: rightbarShownSource };
@@ -486,6 +503,7 @@ window.__ModuleLoader__.load({
               return () => {};
             }
           });
+          headerInstalled = true;
         } catch (error) {
           console.error(
             "workspace-sidebar: header control setup failed",
