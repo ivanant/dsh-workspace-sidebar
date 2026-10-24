@@ -1,0 +1,3 @@
+- insert:
+    - id: workspace-sidebar
+      name: dsh-workspace-sidebar
